@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GS 조경동영상 업로드 현황 대시보드</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --good:           #0ca30c;
+    --critical:       #d03b3b;
+    --warning:        #fab219;
+    --good-bg:        rgba(12,163,12,0.10);
+    --critical-bg:    rgba(208,59,59,0.08);
+    --upcoming-bg:    rgba(137,135,129,0.12);
+    --chip-bg:        #f0efec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --good:           #0ca30c;
+      --critical:       #e66767;
+      --warning:        #fab219;
+      --good-bg:        rgba(12,163,12,0.16);
+      --critical-bg:    rgba(230,103,103,0.14);
+      --upcoming-bg:    rgba(137,135,129,0.16);
+      --chip-bg:        #232322;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --good:           #0ca30c;
+    --critical:       #e66767;
+    --warning:        #fab219;
+    --good-bg:        rgba(12,163,12,0.16);
+    --critical-bg:    rgba(230,103,103,0.14);
+    --upcoming-bg:    rgba(137,135,129,0.16);
+    --chip-bg:        #232322;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  header.page-header { margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 13px; }
+  .meta { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 20px 0 24px;
+  }
+  .stat-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-tile .label { color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; }
+  .stat-tile .value {
+    font-size: 26px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-tile .value.good { color: var(--good); }
+  .stat-tile .value.critical { color: var(--critical); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .controls input[type="search"] {
+    flex: 1 1 220px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--page);
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+  .controls label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .controls .sort-select {
+    font-size: 13px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--page);
+    color: var(--text-primary);
+  }
+
+  .vendor-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .vendor-summary {
+    display: grid;
+    grid-template-columns: 1fr auto auto 160px 20px;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .vendor-summary:hover { background: var(--chip-bg); }
+  .vendor-name { font-weight: 600; font-size: 14px; }
+  .vendor-sitecount { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+  .vendor-count { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .bar-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--critical-bg);
+    overflow: hidden;
+    display: flex;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--good);
+    border-radius: 4px;
+  }
+  .bar-pct { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; margin-top: 3px; }
+
+  .chevron { transition: transform 0.15s ease; color: var(--text-muted); }
+  .vendor-card.open .chevron { transform: rotate(90deg); }
+
+  .site-list { display: none; border-top: 1px solid var(--gridline); }
+  .vendor-card.open .site-list { display: block; }
+
+  .vendor-stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--page);
+    border-bottom: 1px solid var(--gridline);
+  }
+  .vendor-stat .label { color: var(--text-secondary); font-size: 11px; margin-bottom: 4px; }
+  .vendor-stat .value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .vendor-stat .value.good { color: var(--good); }
+  .vendor-stat .value.critical { color: var(--critical); }
+
+  .site-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gridline);
+    align-items: center;
+  }
+  .site-row:last-child { border-bottom: none; }
+  .site-row.hidden { display: none; }
+  .site-name { font-size: 13px; }
+  .site-date { color: var(--text-muted); font-size: 11px; margin-left: 6px; }
+  .badge-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .badge.done { background: var(--good-bg); color: var(--good); }
+  .badge.missing { background: var(--critical-bg); color: var(--critical); }
+  .badge.upcoming { background: var(--upcoming-bg); color: var(--text-muted); }
+  .badge.empty { background: var(--upcoming-bg); color: var(--text-muted); }
+
+  footer {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid var(--gridline);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  footer a { color: var(--text-secondary); }
+
+  .empty-state { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-header">
+    <h1>GS 조경동영상 업로드 현황</h1>
+    <div class="subtitle">협력사별 · 현장별 조경동영상 제출 여부 (준공전 / 1~3년차 대체식재 / 3년차 종결 식재전 / 식재후)</div>
+    <div class="meta" id="meta-line"></div>
+  </header>
+
+  <div class="stat-row" id="stat-row"></div>
+
+  <div class="controls">
+    <input type="search" id="search" placeholder="현장명 또는 협력사명 검색" />
+    <label><input type="checkbox" id="only-missing" /> 미제출만 보기</label>
+    <select class="sort-select" id="sort-select">
+      <option value="worst">완료율 낮은 순</option>
+      <option value="best">완료율 높은 순</option>
+      <option value="name">협력사명순</option>
+    </select>
+  </div>
+
+  <div id="vendor-list"></div>
+
+  <footer>
+    데이터는 OneDrive 조경동영상 폴더의 실제 업로드 파일을 기준으로 계산합니다 (준공일이 아직 도래하지 않은 현장은 "예정"으로 별도 표시하며 통계에서 제외).
+    폴더 자체가 아직 없는 항목은 회색으로 표시됩니다.
+  </footer>
+</div>
+
+<script id="data-blob" type="application/json">__DASHBOARD_DATA__</script>
+<script>
+(function () {
+  const RAW = JSON.parse(document.getElementById('data-blob').textContent);
+  const CATEGORY_ORDER = ["1", "2", "3", "4"];
+  const CATEGORY_SHORT = { "1": "준공전", "2": "대체식재", "3": "종결전", "4": "종결후" };
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  function parseDate(s) {
+    if (!s) return null;
+    const d = new Date(s + "T00:00:00");
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Precompute per-site status
+  const vendors = RAW.vendors.map(v => {
+    const sites = v.sites.map(s => {
+      const cDate = parseDate(s.completionDate);
+      const upcoming = cDate ? (cDate.getTime() > today.getTime()) : false;
+      const catKeys = Object.keys(s.categories || {});
+      const cats = CATEGORY_ORDER.filter(k => catKeys.includes(k)).map(k => ({
+        key: k,
+        label: s.categories[k].label,
+        short: CATEGORY_SHORT[k],
+        uploaded: s.categories[k].uploaded,
+        fileCount: s.categories[k].fileCount
+      }));
+      return {
+        site: s.site,
+        completionDate: s.completionDate,
+        upcoming,
+        hasFolders: cats.length > 0,
+        categories: cats,
+        doneCount: cats.filter(c => c.uploaded).length,
+        totalCount: cats.length
+      };
+    });
+    const countable = sites.filter(s => !s.upcoming && s.hasFolders);
+    const done = countable.reduce((a, s) => a + s.doneCount, 0);
+    const total = countable.reduce((a, s) => a + s.totalCount, 0);
+    return {
+      vendor: v.vendor,
+      siteCount: v.siteCount,
+      sites,
+      done, total,
+      pct: total > 0 ? done / total : null
+    };
+  });
+
+  const grandDone = vendors.reduce((a, v) => a + v.done, 0);
+  const grandTotal = vendors.reduce((a, v) => a + v.total, 0);
+  const grandPct = grandTotal > 0 ? Math.round((grandDone / grandTotal) * 100) : 0;
+
+  document.getElementById('meta-line').textContent =
+    `총 ${RAW.totalVendors}개 협력사 · ${RAW.totalSites}개 현장 기준`;
+
+  const statRow = document.getElementById('stat-row');
+  const stats = [
+    { label: "전체 현장", value: RAW.totalSites },
+    { label: "체크 대상 항목", value: grandTotal, sub: "준공일 도래 + 폴더 생성 기준" },
+    { label: "제출 완료", value: grandDone, cls: "good" },
+    { label: "미제출", value: grandTotal - grandDone, cls: "critical" },
+    { label: "전체 완료율", value: grandPct + "%", cls: grandPct >= 50 ? "good" : "critical" },
+  ];
+  statRow.innerHTML = stats.map(s => `
+    <div class="stat-tile">
+      <div class="label">${s.label}</div>
+      <div class="value ${s.cls || ''}">${s.value}</div>
+      ${s.sub ? `<div class="meta" style="margin-top:4px">${s.sub}</div>` : ''}
+    </div>
+  `).join('');
+
+  const listEl = document.getElementById('vendor-list');
+  const searchEl = document.getElementById('search');
+  const onlyMissingEl = document.getElementById('only-missing');
+  const sortEl = document.getElementById('sort-select');
+
+  function fmtDate(s) {
+    return s || '-';
+  }
+
+  function siteBadges(site) {
+    if (site.upcoming) {
+      return `<span class="badge upcoming">준공 예정 (${fmtDate(site.completionDate)})</span>`;
+    }
+    if (!site.hasFolders) {
+      return `<span class="badge empty">폴더 미생성</span>`;
+    }
+    return site.categories.map(c => {
+      const cls = c.uploaded ? 'done' : 'missing';
+      const icon = c.uploaded ? '✓' : '✗';
+      const countTxt = c.uploaded ? ` ${c.fileCount}` : '';
+      return `<span class="badge ${cls}" title="${c.label}">${icon} ${c.short}${countTxt}</span>`;
+    }).join('');
+  }
+
+  function render() {
+    const q = searchEl.value.trim().toLowerCase();
+    const onlyMissing = onlyMissingEl.checked;
+    const sortMode = sortEl.value;
+
+    let vs = vendors.filter(v => v.siteCount > 0);
+    if (sortMode === 'worst') {
+      vs = vs.slice().sort((a, b) => (a.pct ?? 1) - (b.pct ?? 1));
+    } else if (sortMode === 'best') {
+      vs = vs.slice().sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+    } else {
+      vs = vs.slice().sort((a, b) => a.vendor.localeCompare(b.vendor, 'ko'));
+    }
+
+    let html = '';
+    let anyVisible = false;
+
+    vs.forEach((v, vi) => {
+      const filteredSites = v.sites.filter(s => {
+        const matchesQ = !q || s.site.toLowerCase().includes(q) || v.vendor.toLowerCase().includes(q);
+        const matchesMissing = !onlyMissing || (!s.upcoming && s.hasFolders && s.doneCount < s.totalCount) || (!s.upcoming && !s.hasFolders);
+        return matchesQ && matchesMissing;
+      });
+      if (filteredSites.length === 0) return;
+      anyVisible = true;
+
+      const pctTxt = v.pct === null ? 'N/A' : Math.round(v.pct * 100) + '%';
+      const pctWidth = v.pct === null ? 0 : Math.round(v.pct * 100);
+
+      html += `
+        <div class="vendor-card" data-idx="${vi}">
+          <div class="vendor-summary" role="button">
+            <div>
+              <div class="vendor-name">${v.vendor}</div>
+              <div class="bar-track" style="margin-top:6px;max-width:260px"><div class="bar-fill" style="width:${pctWidth}%"></div></div>
+            </div>
+            <div class="vendor-sitecount">${v.siteCount}개 현장</div>
+            <div class="vendor-count">${v.done}/${v.total}</div>
+            <div class="bar-pct">${pctTxt}</div>
+            <div class="chevron">▶</div>
+          </div>
+          <div class="site-list">
+            <div class="vendor-stat-row">
+              <div class="vendor-stat"><div class="label">현장</div><div class="value">${v.siteCount}</div></div>
+              <div class="vendor-stat"><div class="label">체크 대상</div><div class="value">${v.total}</div></div>
+              <div class="vendor-stat"><div class="label">제출 완료</div><div class="value good">${v.done}</div></div>
+              <div class="vendor-stat"><div class="label">미제출</div><div class="value critical">${v.total - v.done}</div></div>
+              <div class="vendor-stat"><div class="label">완료율</div><div class="value ${v.pct === null ? '' : (v.pct >= 0.5 ? 'good' : 'critical')}">${pctTxt}</div></div>
+            </div>
+            ${filteredSites.map(s => `
+              <div class="site-row">
+                <div class="site-name">${s.site}<span class="site-date">${fmtDate(s.completionDate)}</span></div>
+                <div class="badge-group">${siteBadges(s)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = anyVisible ? html : `<div class="empty-state">조건에 맞는 현장이 없습니다.</div>`;
+
+    listEl.querySelectorAll('.vendor-summary').forEach(el => {
+      el.addEventListener('click', () => {
+        el.closest('.vendor-card').classList.toggle('open');
+      });
+    });
+
+    // auto-expand all when searching or filtering
+    if (q || onlyMissing) {
+      listEl.querySelectorAll('.vendor-card').forEach(el => el.classList.add('open'));
+    }
+  }
+
+  searchEl.addEventListener('input', render);
+  onlyMissingEl.addEventListener('change', render);
+  sortEl.addEventListener('change', render);
+  render();
+})();
+</script>
+</body>
+</html>
